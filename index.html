@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Space Quiz</title>
+   <style>
+       body {
+           margin: 0;
+           overflow: hidden;
+           font-family: Arial, sans-serif;
+           background: #000;
+           color: white;
+           display: flex;
+           justify-content: center;
+           align-items: center;
+           min-height: 100vh;
+       }
+
+       #launchScreen {
+           text-align: center;
+           position: fixed;
+           z-index: 1000;
+           background: black;
+           width: 100%;
+           height: 100%;
+           display: flex;
+           justify-content: center;
+           align-items: center;
+       }
+
+       .launch-button {
+           padding: 20px 40px;
+           font-size: 24px;
+           background: linear-gradient(45deg, #2196F3, #21CBF3);
+           color: white;
+           border: none;
+           border-radius: 10px;
+           cursor: pointer;
+           animation: pulse 2s infinite;
+       }
+
+       @keyframes pulse {
+           0% { transform: scale(1); }
+           50% { transform: scale(1.05); }
+           100% { transform: scale(1); }
+       }
+
+       .space-background {
+           position: fixed;
+           width: 100%;
+           height: 200%;
+           background: radial-gradient(circle at center, #0a192f 0%, #000 100%);
+           animation: space-scroll 60s linear infinite;
+           z-index: 0;
+       }
+
+       @keyframes space-scroll {
+           0% { transform: translateY(0); }
+           100% { transform: translateY(-50%); }
+       }
+
+       .star {
+           position: absolute;
+           background: white;
+           border-radius: 50%;
+           animation: twinkle 1.5s infinite ease-in-out;
+       }
+
+       @keyframes twinkle {
+           0%, 100% { opacity: 0.3; }
+           50% { opacity: 1; }
+       }
+
+       .game-container {
+           position: relative;
+           z-index: 1;
+           background: rgba(255, 255, 255, 0.1);
+           backdrop-filter: blur(10px);
+           border-radius: 20px;
+           padding: 30px;
+           max-width: 800px;
+           width: 90%;
+           animation: float 6s ease-in-out infinite;
+       }
+
+       @keyframes float {
+           0%, 100% { transform: translateY(0px); }
+           50% { transform: translateY(-20px); }
+       }
+
+       .hidden {
+           display: none !important;
+       }
+
+       button {
+           background: linear-gradient(45deg, #2196F3, #21CBF3);
+           border: none;
+           border-radius: 10px;
+           color: white;
+           padding: 15px 30px;
+           font-size: 1.2rem;
+           cursor: pointer;
+           transition: all 0.3s ease;
+           width: 100%;
+           margin: 10px 0;
+           position: relative;
+       }
+
+       button:hover {
+           transform: scale(1.05);
+           box-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
+       }
+
+       button:disabled {
+           cursor: default;
+           opacity: 1;
+       }
+
+       button:disabled:hover {
+           transform: none;
+       }
+
+       .question {
+           font-size: 1.5rem;
+           margin-bottom: 20px;
+           color: #2196F3;
+       }
+
+       .timer {
+           height: 10px;
+           background: rgba(255, 255, 255, 0.1);
+           border-radius: 5px;
+           margin: 20px 0;
+       }
+
+       .timer-bar {
+           height: 100%;
+           background: linear-gradient(90deg, #2196F3, #21CBF3);
+           border-radius: 5px;
+           transition: width 1s linear;
+       }
+
+       .feedback {
+           font-size: 1.5rem;
+           margin: 20px 0;
+           text-align: center;
+       }
+
+       .feedback.correct { color: #4CAF50; }
+       .feedback.wrong { color: #f44336; }
+
+       #countdown {
+           font-size: 5rem;
+           color: #2196F3;
+           text-align: center;
+       }
+
+       h1 {
+           color: #2196F3;
+           text-align: center;
+           margin-bottom: 30px;
+       }
+
+       .arrow {
+           position: absolute;
+           left: -30px;
+           top: 50%;
+           transform: translateY(-50%);
+           color: yellow;
+           font-size: 24px;
+       }
+
+       .correct-answer {
+           background: linear-gradient(45deg, #4CAF50, #45a049) !important;
+           transform: scale(1.02);
+       }
+
+       .wrong-answer {
+           background: linear-gradient(45deg, #f44336, #d32f2f) !important;
+       }
+
+       .time-up-overlay {
+           position: fixed;
+           top: 0;
+           left: 0;
+           width: 100%;
+           height: 100%;
+           background-color: rgba(0, 0, 0, 0.9);
+           display: flex;
+           justify-content: center;
+           align-items: center;
+           font-size: 5rem;
+           color: #f44336;
+           z-index: 1000;
+           animation: timeup-animation 0.5s ease-out;
+           text-shadow: 0 0 20px rgba(244, 67, 54, 0.5);
+           font-weight: bold;
+       }
+
+       @keyframes timeup-animation {
+           0% { transform: scale(0); opacity: 0; }
+           50% { transform: scale(1.2); opacity: 1; }
+           100% { transform: scale(1); opacity: 1; }
+       }
+   </style>
+</head>
+<body>
+   <div id="launchScreen">
+       <button class="launch-button" onclick="startQuiz()">Launch Space Quiz</button>
+   </div>
+   
+   <div id="gameContent" style="display: none;">
+       <div class="space-background" id="spaceBackground"></div>
+       <div class="game-container">
+           <div id="start-screen">
+               <h1>Space Station Quiz</h1>
+               <button id="start-button">Start Mission</button>
+           </div>
+
+           <div id="countdown-screen" class="hidden">
+               <h1 id="countdown">5</h1>
+           </div>
+
+           <div id="game-screen" class="hidden">
+               <div class="timer">
+                   <div id="timer-bar" class="timer-bar"></div>
+               </div>
+               <p id="question" class="question"></p>
+               <div id="options"></div>
+               <div id="feedback" class="feedback"></div>
+           </div>
+
+           <div id="end-screen" class="hidden">
+               <h1>Mission Complete!</h1>
+               <p id="score" style="text-align: center; font-size: 1.5rem;"></p>
+               <button id="restart-button">New Mission</button>
+           </div>
+       </div>
+   </div>
+
+   <script>
+       const questions = [
+           { question: "What is the primary purpose of the space station?", options: ["Education and research", "Tourism", "Space mining", "Military operations"], answer: 0 }, 
+           { question: "What skills do astronauts learn on the space station?", options: ["Medicine and psychology", "Cooking gourmet meals", "Dance choreography", "Architectural design"], answer: 0 }, 
+           { question: "What is recycled on the space station to sustain life?", options: ["Water and air", "Plastics", "Metal", "Food waste"], answer: 0 }, 
+           { question: "What advanced technology is used for navigation?", options: ["AI guidance systems", "Manual controls", "Ground control only", "Automatic pilot"], answer: 0 }, 
+           { question: "How do astronauts maintain their health?", options: ["Daily exercise routines", "Meditation only", "Virtual reality therapy", "Sleep therapy"], answer: 0 }, 
+           { question: "What energy source powers the space station?", options: ["Solar panels", "Nuclear reactor", "Battery banks", "Wind turbines"], answer: 0 }, 
+           { question: "How do astronauts communicate with Earth?", options: ["Satellite network", "Radio signals", "Morse code", "Light signals"], answer: 0 }, 
+           { question: "What scientific equipment is most used?", options: ["Microscopes", "Telescopes", "Weather radar", "Seismic sensors"], answer: 0 }, 
+           { question: "How is waste managed on the station?", options: ["Recycling systems", "Ejection to space", "Incineration", "Storage containers"], answer: 0 }, 
+           { question: "What safety system is most critical?", options: ["Air filtration", "Fire suppression", "Radiation shields", "Emergency pods"], answer: 0 }
+       ];
+
+       function startQuiz() {
+           document.getElementById('launchScreen').style.display = 'none';
+           document.getElementById('gameContent').style.display = 'block';
+           initGame();
+       }
+
+       function shuffleArray(array) {
+           for (let i = array.length - 1; i > 0; i--) {
+               const j = Math.floor(Math.random() * (i + 1));
+               [array[i], array[j]] = [array[j], array[i]];
+           }
+           return array;
+       }
+
+       function createStars() {
+           const background = document.getElementById('spaceBackground');
+           for (let i = 0; i < 200; i++) {
+               const star = document.createElement('div');
+               star.className = 'star';
+               star.style.left = `${Math.random() * 100}%`;
+               star.style.top = `${Math.random() * 100}%`;
+               star.style.width = `${Math.random() * 3}px`;
+               star.style.height = star.style.width;
+               star.style.animationDelay = `${Math.random() * 2}s`;
+               background.appendChild(star);
+           }
+       }
+
+       let currentQuestionIndex = 0;
+       let timeLeft = 45;
+       let score = 0;
+       let timer;
+
+       const screens = {
+           start: document.getElementById('start-screen'),
+           countdown: document.getElementById('countdown-screen'),
+           game: document.getElementById('game-screen'),
+           end: document.getElementById('end-screen')
+       };
+
+       function initGame() {
+           createStars();
+           const startButton = document.getElementById('start-button');
+           const restartButton = document.getElementById('restart-button');
+           startButton.onclick = startGame;
+           restartButton.onclick = restartGame;
+       }
+
+       function showScreen(screenName) {
+           Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+           screens[screenName].classList.remove('hidden');
+       }
+
+       function startGame() {
+           showScreen('countdown');
+           let countdown = 5;
+           const countdownElement = document.getElementById('countdown');
+           
+           const interval = setInterval(() => {
+               countdown--;
+               countdownElement.textContent = countdown;
+               if (countdown === 0) {
+                   clearInterval(interval);
+                   showScreen('game');
+                   displayQuestion();
+                   startTimer();
+               }
+           }, 1000);
+       }
+
+       function displayQuestion() {
+           if (currentQuestionIndex >= questions.length) {
+               endGame();
+               return;
+           }
+
+           const question = questions[currentQuestionIndex];
+           document.getElementById('question').textContent = question.question;
+           
+           const optionsContainer = document.getElementById('options');
+           optionsContainer.innerHTML = '';
+           
+           let optionsWithIndex = question.options.map((option, index) => ({
+               text: option,
+               isCorrect: index === question.answer
+           }));
+           
+           shuffleArray(optionsWithIndex);
+           
+           optionsWithIndex.forEach((option, index) => {
+               const button = document.createElement('button');
+               button.textContent = option.text;
+               button.onclick = () => checkAnswer(index, optionsWithIndex);
+               optionsContainer.appendChild(button);
+           });
+       }
+
+       function startTimer() {
+           timeLeft = 45;
+           const timerBar = document.getElementById('timer-bar');
+           timerBar.style.width = '100%';
+
+           timer = setInterval(() => {
+               timeLeft--;
+               timerBar.style.width = `${(timeLeft / 45) * 100}%`;
+               
+               if (timeLeft <= 0) {
+                   clearInterval(timer);
+                   
+                   const timeUpOverlay = document.createElement('div');
+                   timeUpOverlay.className = 'time-up-overlay';
+                   timeUpOverlay.textContent = 'TIME IS UP!!';
+                   document.body.appendChild(timeUpOverlay);
+
+                   setTimeout(() => {
+                       document.body.removeChild(timeUpOverlay);
+                       nextQuestion();
+                   }, 2000);
+               }
+           }, 1000);
+       }
+
+       function checkAnswer(selectedIndex, optionsWithIndex) {
+           clearInterval(timer);
+           const feedback = document.getElementById('feedback');
+           const buttons = document.querySelectorAll('#options button');
+           
+           buttons.forEach(button => button.disabled = true);
+
+           const selectedButton = buttons[selectedIndex];
+           const arrow = document.createElement('span');
+           arrow.textContent = '➤';
+           arrow.className = 'arrow';
+           selectedButton.appendChild(arrow);
+
+           const correctIndex = optionsWithIndex.findIndex(opt => opt.isCorrect);
+           buttons[correctIndex].classList.add('correct-answer');
+
+           if (!optionsWithIndex[selectedIndex].isCorrect) {
+               selectedButton.classList.add('wrong-answer');
+               feedback.textContent = 'Wrong!';
+               feedback.className = 'feedback wrong';
+           } else {
+               score++;
+               feedback.textContent = 'Correct!';
+               feedback.className = 'feedback correct';
+           }
+
+           setTimeout(nextQuestion, 2000);
+       }
+
+       function nextQuestion() {
+           currentQuestionIndex++;
+           document.getElementById('feedback').textContent = '';
+           displayQuestion();
+           startTimer();
+       }
+
+       function endGame() {
+           showScreen('end');
+           document.getElementById('score').textContent = `Score: ${score}/${questions.length}`;
+       }
+
+       function restartGame() {
+           currentQuestionIndex = 0;
+           score = 0;
+           showScreen('start');
+       }
+   </script>
+</body>
+</html>
